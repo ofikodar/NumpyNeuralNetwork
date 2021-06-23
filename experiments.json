@@ -1,0 +1,42 @@
+[
+  {
+    "name": "experiment_3",
+    "layers": [
+      {
+        "type": "conv2d",
+        "kernel_size": 3,
+        "num_kernels": 4,
+        "num_channels": 3,
+
+        "previous_nodes": "input"
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "flatten"
+      },
+      {
+        "type": "fc",
+        "num_nodes": 64,
+        "previous_nodes": 4096
+      },
+      {
+        "type": "sigmoid"
+      },
+      {
+        "type": "fc",
+        "num_nodes": "output",
+        "previous_nodes": 64
+      },
+      {
+        "type": "softmax"
+      }
+    ],
+    "batch_size": 16,
+    "lr": 0.001,
+    "lr_decay": 0.8,
+    "epochs": 100
+
+  }
+]
