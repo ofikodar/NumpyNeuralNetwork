@@ -1,5 +1,5 @@
 import copy
-
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -109,6 +109,10 @@ class Model:
         self._export_history(history)
 
     def _export_history(self, history):
+        output_dir = 'experiments/'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         keys = ['acc', 'loss']
         total_epochs = len(history['train_loss'])
         idx = range(total_epochs)
@@ -120,7 +124,7 @@ class Model:
             plt.legend(['train', 'val'])
 
             plt.xlabel("Epochs")
-            plt.savefig(f"{key} - {self.model_name}.jpg")
+            plt.savefig(output_dir + f"{key} - {self.model_name}.jpg")
             plt.clf()
 
     def report(self, x_data, y_data, name):
@@ -135,9 +139,7 @@ class Model:
                 acc += 1
 
         loss /= x_data.shape[0]
-
         acc /= x_data.shape[0]
-
         acc = 100 * acc
 
         print(f"{name} loss:", round(loss, 4))
