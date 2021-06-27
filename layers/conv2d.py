@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import jit
 from scipy.signal import convolve2d
 
 
@@ -28,42 +28,13 @@ class Conv2DLayer:
         for _filter_index in range(self.num_kernels):
             for _channel_index in range(channel_size):
                 layer_output[:, :, _filter_index] += convolve2d(layer_input[:, :, _channel_index],
-                                                                self.weights[_filter_index,:,:, _channel_index],
+                                                                self.weights[_filter_index, :, :, _channel_index],
                                                                 mode='same')
         return layer_output
 
     def derive(self, dz):
         da, dw, db = _compiled_derive(self.cache, self.kernel_size, self.weights, dz)
 
-        self.weights_gradients.append(dw)
-        self.bias_gradients.append(db)
-
-        return da
-
-    def derive_2(self, dz):
-
-        a_prev = self.cache
-        prev_h, prev_w, prev_c = a_prev.shape
-
-        out_h, out_w, out_c = dz.shape
-        dw = np.zeros((out_c, self.kernel_size, self.kernel_size, prev_c))
-        db = np.zeros(out_c)
-
-        pad_size = int((self.kernel_size - 1) / 2)
-        a_prev_pad = np.zeros((prev_h + 2 * pad_size, prev_w + 2 * pad_size, prev_c))
-        a_prev_pad[pad_size:-pad_size, pad_size:-pad_size] = a_prev
-        da_prev_pad = np.zeros(a_prev_pad.shape)
-
-        for h in range(out_h):
-            for w in range(out_w):
-                for c in range(out_c):
-                    slice = a_prev_pad[h:h + self.kernel_size, w:w + self.kernel_size, :]
-                    da_prev_pad[h:h + self.kernel_size, w:w + self.kernel_size, :] += self.weights[c] * dz[h, w, c]
-
-                    dw[c] += slice * dz[h, w, c]
-                    db[c] += dz[h, w, c]
-
-        da = da_prev_pad[pad_size:-pad_size, pad_size:-pad_size, :]
         self.weights_gradients.append(dw)
         self.bias_gradients.append(db)
 
@@ -85,7 +56,7 @@ class Conv2DLayer:
         self.bias_gradients = []
 
 
-@njit
+@jit(nopython=True)
 def _compiled_derive(cache, kernel_size, weights, dz):
     a_prev = cache
     prev_h, prev_w, prev_c = a_prev.shape
