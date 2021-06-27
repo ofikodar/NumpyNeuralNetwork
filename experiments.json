@@ -1,17 +1,33 @@
 [
   {
-    "name": "experiment_3",
+    "name": "experiment_1",
     "layers": [
       {
         "type": "conv2d",
         "kernel_size": 3,
-        "num_kernels": 4,
-        "num_channels": 3,
+        "num_kernels": 16,
+        "num_channels": 3
 
-        "previous_nodes": "input"
       },
       {
         "type": "leakyRelu"
+      },
+        {
+        "type": "maxPooling",
+          "pool_size": 4
+      },
+            {
+        "type": "conv2d",
+        "kernel_size": 3,
+        "num_kernels": 32,
+        "num_channels": 16
+      },
+      {
+        "type": "leakyRelu"
+      },
+        {
+        "type": "maxPooling",
+          "pool_size": 2
       },
       {
         "type": "flatten"
@@ -19,10 +35,10 @@
       {
         "type": "fc",
         "num_nodes": 64,
-        "previous_nodes": 4096
+        "previous_nodes": 512
       },
       {
-        "type": "sigmoid"
+        "type": "leakyRelu"
       },
       {
         "type": "fc",
