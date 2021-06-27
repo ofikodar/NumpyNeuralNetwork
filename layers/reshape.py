@@ -16,7 +16,7 @@ class FlattenLayer:
         pass
 
 
-class MaxPollLayer:
+class MaxPoolLayer:
     def __init__(self, layer_description):
         self.type = layer_description['type']
         self.pool_size = layer_description['pool_size']
