@@ -92,8 +92,11 @@ if __name__ == '__main__':
     l = Conv2DLayer(desc)
     inp = np.random.randn(32, 32, 3)
     import time
+    s_t = time.time()
 
     x = l.forward(inp)
+    print(time.time() - s_t)
+
     inp = np.random.randn(32, 32, 4)
     s_t = time.time()
     l.derive(inp)
