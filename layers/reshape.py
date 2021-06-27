@@ -40,6 +40,7 @@ class MaxPoolLayer:
                     window_argmax = window.argmax()
                     window_row_index = window_argmax // self.pool_size
                     window_col_index = window_argmax % self.pool_size
+
                     self.cache[_r + window_row_index, _c + window_col_index, _channel_idx] = 1
 
         return pool_output
