@@ -5,25 +5,25 @@
       {
         "type": "conv2d",
         "kernel_size": 3,
-        "num_kernels": 16,
+        "num_kernels": 32,
         "num_channels": 3
 
       },
       {
-        "type": "leakyRelu"
+        "type": "sigmoid"
       },
         {
         "type": "maxPooling",
-          "pool_size": 4
+          "pool_size": 2
       },
             {
         "type": "conv2d",
         "kernel_size": 3,
-        "num_kernels": 32,
-        "num_channels": 16
+        "num_kernels": 64,
+        "num_channels": 32
       },
       {
-        "type": "leakyRelu"
+        "type": "sigmoid"
       },
         {
         "type": "maxPooling",
@@ -34,11 +34,19 @@
       },
       {
         "type": "fc",
-        "num_nodes": 64,
+        "num_nodes": 1024,
         "previous_nodes": 512
       },
       {
-        "type": "leakyRelu"
+        "type": "sigmoid"
+      },
+            {
+        "type": "fc",
+        "num_nodes": 128,
+        "previous_nodes": 1024
+      },
+      {
+        "type": "sigmoid"
       },
       {
         "type": "fc",
@@ -49,10 +57,10 @@
         "type": "softmax"
       }
     ],
-    "batch_size": 16,
-    "lr": 0.001,
+    "batch_size": 64,
+    "lr": 0.0001,
     "lr_decay": 0.8,
-    "epochs": 100
+    "epochs": 1000
 
   }
 ]
