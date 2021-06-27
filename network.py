@@ -1,7 +1,9 @@
 import copy
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import jit
 
 from layers.layers import layers_type_dict
 
@@ -39,9 +41,7 @@ class Model:
 
     def cross_entropy(self, predictions, labels):
 
-        epsilon = 1e-10
-
-        cost = -np.sum(labels.flatten() * np.log(predictions.flatten() + epsilon))
+        cost = _compiled_cross_entropy(predictions, labels)
         return cost
 
     def fit(self, X_train, X_test, y_train, y_test, batch_size=32, lr=0.01,
@@ -144,4 +144,12 @@ class Model:
 
         print(f"{name} loss:", round(loss, 4))
         print(f"{name} Acc:", round(acc, 4))
+
         return loss, acc
+
+
+@jit(nopython=True)
+def _compiled_cross_entropy(predictions, labels):
+    epsilon = 1e-10
+    cost = -np.sum(labels.flatten() * np.log(predictions.flatten() + epsilon))
+    return cost
