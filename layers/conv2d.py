@@ -41,18 +41,10 @@ class Conv2DLayer:
         return da
 
     def update_weights(self, lr):
-        # self.weights_gradients = self.weights_gradients[1:]
-        # self.bias_gradients = self.bias_gradients[1:]
-
-        self.weights_gradients = np.array(self.weights_gradients).sum(axis=0)
-
-        self.weights = self.weights - lr * self.weights_gradients
-
+        self.weights = _compiled_weight_update(self.weights, np.array(self.weights_gradients), lr)
         self.weights_gradients = []
 
-        self.bias_gradients = np.array(self.bias_gradients).sum(axis=0)
-
-        self.bias = self.bias - lr * self.bias_gradients
+        self.bias = _compiled_weight_update(self.bias, np.array(self.bias_gradients), lr)
         self.bias_gradients = []
 
 
@@ -83,6 +75,13 @@ def _compiled_derive(cache, kernel_size, weights, dz):
     return da, dw, db
 
 
+@jit(nopython=True)
+def _compiled_weight_update(weights, weights_gradients, lr):
+    weights_gradients = weights_gradients.sum(axis=0)
+    weights = weights - lr * weights_gradients
+    return weights
+
+
 if __name__ == '__main__':
     np.random.seed(69)
     desc = {"type": "conv2d",
@@ -92,6 +91,7 @@ if __name__ == '__main__':
     l = Conv2DLayer(desc)
     inp = np.random.randn(32, 32, 3)
     import time
+
     s_t = time.time()
 
     x = l.forward(inp)
