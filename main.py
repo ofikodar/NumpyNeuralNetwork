@@ -26,20 +26,12 @@ def load_data():
     return X_train, y_train, X_val, y_val, X_test, test_df
 
 
-def _extract_data_2(df, is_test=False):
-    x_data = df[list(df)[1:]].values
-    y_data = None
-    if not is_test:
-        y_data = np.eye(NUM_CATEGORIES)[df[0] - 1]
-    return x_data, y_data
-
-
 def _extract_data(df, is_test=False):
     x_data = df[list(df)[1:]].values
     image_size = 32
     image_size_squared = image_size ** 2
     num_channels = 3
-    images = np.zeros([len(x_data), image_size, image_size,num_channels])
+    images = np.zeros([len(x_data), image_size, image_size, num_channels])
     for c in range(num_channels):
         images_channel = x_data[:, image_size_squared * c:image_size_squared * (c + 1)]
         images_channel = images_channel.reshape(-1, image_size, image_size)
@@ -54,7 +46,7 @@ def _extract_data(df, is_test=False):
 def _predict_test(model, name):
     predictions = []
     for x in X_test:
-        p = model.predict(np.expand_dims(x, 1)).argmax()
+        p = model.predict(x).argmax()
         predictions.append(p)
 
     test_df[0] = predictions
