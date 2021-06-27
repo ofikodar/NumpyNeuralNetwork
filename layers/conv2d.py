@@ -1,7 +1,6 @@
 import numpy as np
-from numba import jit, njit
+from numba import njit
 from scipy.signal import convolve2d
-import time
 
 
 class Conv2DLayer:
@@ -25,12 +24,11 @@ class Conv2DLayer:
     def forward(self, layer_input):
         self.cache = layer_input
         h, w, channel_size = layer_input.shape
-
         layer_output = np.zeros([h, w, self.num_kernels])
         for _filter_index in range(self.num_kernels):
             for _channel_index in range(channel_size):
                 layer_output[:, :, _filter_index] += convolve2d(layer_input[:, :, _channel_index],
-                                                                self.weights[_filter_index, _channel_index],
+                                                                self.weights[_filter_index,:,:, _channel_index],
                                                                 mode='same')
         return layer_output
 

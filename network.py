@@ -33,7 +33,6 @@ class Model:
         for i in range(1, self.num_layers):
             dz = self.layers[str(self.last_layer_index - i)].derive(dz)
 
-
     def update_weights(self, lr):
         for layer in range(self.num_layers):
             self.layers[str(layer)].update_weights(lr)
