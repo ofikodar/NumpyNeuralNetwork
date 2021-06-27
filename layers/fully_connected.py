@@ -1,4 +1,5 @@
 import numpy as np
+from numba import jit
 
 
 class FCLayer:
@@ -13,26 +14,67 @@ class FCLayer:
         self.bias = bias
         self.weights_gradients = []
         self.bias_gradients = []
-        self.cache = []
 
     def forward(self, layer_input):
         self.cache = layer_input
-        z = np.dot(self.weights, layer_input) + self.bias
+        z = _compiled_forward(layer_input, self.weights, self.bias)
+
         return z
 
     def derive(self, dz):
-        dw = np.dot(dz, self.cache.T)
-        db = dz
+        dh_prev, dw, db = _compiled_derive(self.cache, dz, self.weights)
         self.weights_gradients.append(dw)
         self.bias_gradients.append(db)
-        dh_prev = np.dot(self.weights.T, dz)
         return dh_prev
 
     def update_weights(self, lr):
-        self.weights_gradients = np.array(self.weights_gradients).sum(axis=0)
-        self.weights = self.weights - lr * self.weights_gradients
+        self.weights = _compiled_weight_update(self.weights, np.array(self.weights_gradients), lr)
         self.weights_gradients = []
 
-        self.bias_gradients = np.array(self.bias_gradients).sum(axis=0)
-        self.bias = self.bias - lr * self.bias_gradients
+        self.bias = _compiled_weight_update(self.bias, np.array(self.bias_gradients), lr)
         self.bias_gradients = []
+
+
+@jit(nopython=True)
+def _compiled_forward(layer_input, weights, bias):
+    z = np.dot(weights, layer_input) + bias
+    return z
+
+
+@jit(nopython=True)
+def _compiled_derive(cache, dz, weights):
+    dw = np.dot(dz, cache.T)
+    db = dz
+    dh_prev = np.dot(weights.T, dz)
+    return dh_prev, dw, db
+
+
+@jit(nopython=True)
+def _compiled_weight_update(weights, weights_gradients, lr):
+    weights_gradients = weights_gradients.sum(axis=0)
+    weights = weights - lr * weights_gradients
+    return weights
+
+
+if __name__ == '__main__':
+    np.random.seed(42)
+    desc = {"type": "fc",
+            "num_nodes": 10,
+            "previous_nodes": 64}
+    l = FCLayer(desc)
+    inp = np.random.randn(64).reshape(-1, 1)
+
+    import time
+
+    x = l.forward(inp)
+    _ = l.derive(x)
+    s_t = time.time()
+    _ = l.update_weights(0.01)
+
+    print(time.time() - s_t)
+    s_t = time.time()
+    _ = l.update_weights(0.01)
+    print(time.time() - s_t)
+    s_t = time.time()
+    _ = l.update_weights(0.01)
+    print(time.time() - s_t)
