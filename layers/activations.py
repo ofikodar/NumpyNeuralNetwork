@@ -37,22 +37,17 @@ class LeakyRelu:
         self.alpha = 0.1
 
     def forward(self, layer_input):
+        z = np.maximum(0, layer_input)
+
         self.cache = layer_input
 
-        z = layer_input.copy()
-        is_neg = z < 0
-        z[is_neg] = self.alpha * z[is_neg]
         return z
 
     def derive(self, dz):
-        z = self.cache
-        derivative = np.zeros(shape=z.shape)
-        is_neg = z < 0
+        layer_input = self.cache
+        dz = dz * (layer_input > 0)
 
-        derivative[is_neg] = self.alpha
-        derivative[~is_neg] = 1
-
-        return dz * derivative
+        return dz
 
     def update_weights(self, lr):
         pass

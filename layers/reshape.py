@@ -27,51 +27,73 @@ class MaxPoolLayer:
         return pool_output
 
     def derive(self, dz):
-        return self.cache
+        dz = _compiled_derive(self.cache, dz, self.pool_size)
+        return dz
 
     def update_weights(self, lr):
         pass
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def _compiled_forward(layer_input, pool_size):
-    rows, cols, channels = layer_input.shape
-    _rows_steps = rows // pool_size
-    _cols_steps = cols // pool_size
+    C, H, W = layer_input.shape
+    PH = pool_size
+    PW = pool_size
+    stride = 2
+    outH = int(1 + (H - PH) / stride)
+    outW = int(1 + (W - PW) / stride)
 
-    cache = np.zeros(layer_input.shape)
-    pool_output = np.zeros((_rows_steps, _cols_steps, channels))
-    for _r in range(0, rows, _rows_steps):
-        for _c in range(0, cols, _cols_steps):
-            for _channel_idx in range(channels):
-                window = layer_input[_r:_r + pool_size, _c:_c + pool_size, _channel_idx]
-                window_max = window.max()
-                rows_pool_index = _r // pool_size
-                cols_pool_index = _c // pool_size
-                pool_output[rows_pool_index, cols_pool_index, _channel_idx] = window_max
+    pool_output = np.zeros((C, outH * outW))
+    neuron = 0
+    for i in range(0, H - PH + 1, stride):
+        for j in range(0, W - PW + 1, stride):
+            pool_region = layer_input[:, i:i + PH, j:j + PW].copy().reshape(C, PH * PW)
+            pool_output[:, neuron] = pool_region.max()
+            neuron += 1
+    pool_output = pool_output.reshape(C, outH, outW)
 
-                window_argmax = window.argmax()
-                window_row_index = window_argmax // pool_size
-                window_col_index = window_argmax % pool_size
-
-                cache[_r + window_row_index, _c + window_col_index, _channel_idx] = 1
-
+    cache = layer_input
     return cache, pool_output
+
+
+@jit(nopython=True)
+def _compiled_derive(cache, dout, pool_size):
+
+    x = cache
+    C, outH, outW = dout.shape
+    H, W = x.shape[1], x.shape[2]
+    PH = pool_size
+    PW = pool_size
+    stride = 2
+    # initialize gradient
+    dx = np.zeros(x.shape)
+
+    dout_row = dout.reshape(C, outH * outW)
+    neuron = 0
+    for i in range(0, H - PH + 1, stride):
+        for j in range(0, W - PW + 1,stride):
+            pool_region = x[:, i:i + PH, j:j + PW].copy().reshape(C, PH * PW)
+            dmax_pool = np.zeros(pool_region.shape)
+
+            for idx in range(C):
+                max_pool_idx = int(pool_region[idx,:].argmax())
+                dout_cur = dout_row[:, neuron]
+                dmax_pool[idx, max_pool_idx] = dout_cur[0]
+            neuron +=1
+            dx[:, i:i + PH, j:j + PW] += dmax_pool.copy().reshape(C, PH, PW)
+    return dx
 
 
 if __name__ == '__main__':
     np.random.seed(42)
     desc = {"type": "maxPooling",
-            "pool_size": 2,
-            "num_kernels": 4,
-            "num_channels": 3}
+            "pool_size": 2}
     l = MaxPoolLayer(desc)
-    inp = np.random.randn(32, 32, 3)
+    inp = (np.random.randn(1, 8, 8) * 10).astype(int)
     import time
 
-    s_t = time.time()
+    print(inp)
     x = l.forward(inp)
-    print(time.time() - s_t)
     s_t = time.time()
-    x = l.forward(inp)
+    zzz = l.derive(x)
     print(time.time() - s_t)

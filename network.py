@@ -38,7 +38,16 @@ class Model:
     def update_weights(self, lr):
         for layer in range(self.num_layers):
             self.layers[str(layer)].update_weights(lr)
-
+            #
+            # try:
+            #     print(self.layers[str(layer)].type)
+            #     print(np.array(self.layers[str(layer)].weights_gradients).shape)
+            #     print(np.array(self.layers[str(layer)].weights).shape)
+            #     self.layers[str(layer)].update_weights(lr)
+            #
+            # except:
+            #     pass
+            # print("------------------")
     def cross_entropy(self, predictions, labels):
 
         cost = _compiled_cross_entropy(predictions, labels)
@@ -69,6 +78,8 @@ class Model:
             print("Epoch num:", e)
 
             epoch_correct_samples = 0
+            epoch_count_samples = 0
+
             epoch_aggregated_log = 0
 
             np.random.shuffle(idx)
@@ -87,9 +98,11 @@ class Model:
                     epoch_aggregated_log, epoch_correct_samples = self.update_epoch_training_history(p, y,
                                                                                                      epoch_aggregated_log,
                                                                                                      epoch_correct_samples)
-
+                    epoch_count_samples+=1
                 self.update_weights(lr)
-            train_loss, train_acc = self.train_report(X_train, epoch_aggregated_log, epoch_correct_samples)
+            train_loss, train_acc = self.train_report(epoch_count_samples, epoch_aggregated_log, epoch_correct_samples)
+            # val_loss, val_acc = self.val_report(X_train, y_train)
+
             val_loss, val_acc = self.val_report(X_test, y_test)
 
             history['train_acc'].append(train_acc)
@@ -142,10 +155,10 @@ class Model:
             acc += 1
         return loss, acc
 
-    def train_report(self, x_data, loss, acc):
+    def train_report(self, epoch_count_samples, loss, acc):
         name = 'Train'
-        loss /= x_data.shape[0]
-        acc /= x_data.shape[0]
+        loss /= epoch_count_samples
+        acc /= epoch_count_samples
         acc = 100 * acc
 
         print(f"{name} loss:", round(loss, 4))

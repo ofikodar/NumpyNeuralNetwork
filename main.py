@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from network import Model
 
 data_path = 'data/'
@@ -15,9 +15,9 @@ NUM_CATEGORIES = 10
 
 
 def load_data():
-    train_df = pd.read_csv(train_data_file, header=None,nrows=1000)
-    val_df = pd.read_csv(validation_data_file, header=None,nrows=1000)
-    test_df = pd.read_csv(test_data_file, header=None,nrows=1000)
+    train_df = pd.read_csv(train_data_file, header=None)
+    val_df = pd.read_csv(validation_data_file, header=None)
+    test_df = pd.read_csv(test_data_file, header=None)
 
     X_train, y_train = _extract_data(train_df)
     X_val, y_val = _extract_data(val_df)
@@ -31,11 +31,11 @@ def _extract_data(df, is_test=False):
     image_size = 32
     image_size_squared = image_size ** 2
     num_channels = 3
-    images = np.zeros([len(x_data), image_size, image_size, num_channels])
+    images = np.zeros([len(x_data),num_channels, image_size, image_size])
     for c in range(num_channels):
         images_channel = x_data[:, image_size_squared * c:image_size_squared * (c + 1)]
         images_channel = images_channel.reshape(-1, image_size, image_size)
-        images[:, :, :, c] = images_channel
+        images[:,c, :, :] = images_channel
 
     y_data = None
     if not is_test:
