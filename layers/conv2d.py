@@ -89,7 +89,7 @@ def _compiled_derive(cache, kernel_size, weights, dout):
 
     # create x_col matrix with values that each neuron is connected to
     x_col = np.zeros((C * FH * FW, outH * outW))  # [C*FH*FW x H'*W']
-    out_col = dout.reshape(F, outH * outW)  # [F x H'*W']
+    out_col = dout.copy().reshape(F, outH * outW)  # [F x H'*W']
     w_out = w_row.T.dot(out_col)  # [C*FH*FW x H'*W']
     dx_cur = np.zeros((C, Hpad, Wpad))
     neuron = 0
