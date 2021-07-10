@@ -3,12 +3,25 @@
     "name": "experiment_1",
     "layers": [
       {
+        "type": "conv2d",
+        "kernel_size": 3,
+        "input_channels": 3,
+        "output_channels": 32
+      },
+      {
+        "type": "sigmoid"
+      },
+      {
+        "type": "maxPooling",
+        "pool_size": 2
+      },
+      {
         "type": "flatten"
       },
       {
         "type": "fc",
         "num_nodes": 128,
-        "previous_nodes": 3072
+        "previous_nodes": 8192
       },
       {
         "type": "sigmoid"
@@ -30,9 +43,11 @@
         "type": "softmax"
       }
     ],
-    "batch_size": 128,
+    "batch_size": 32,
     "lr": 0.01,
     "lr_decay": 0.8,
-    "epochs": 100
+    "epochs": 100,
+    "lr_patience": 3,
+    "es_patience": 100
   }
 ]

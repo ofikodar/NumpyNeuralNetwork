@@ -20,6 +20,7 @@ class Sigmoid:
 
 @jit(nopython=True)
 def _compiled_forward_sigmoid(layer_input):
+
     output = 1 / (1 + np.exp(-layer_input))
     return output
 
@@ -28,6 +29,7 @@ def _compiled_forward_sigmoid(layer_input):
 def _compiled_derive_sigmoid(dz, sigmoid_z):
     d_sigmoid = sigmoid_z * (1 - sigmoid_z)
     output = dz * d_sigmoid
+
     return output
 
 

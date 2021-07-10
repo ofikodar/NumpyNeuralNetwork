@@ -3,7 +3,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import jit
+# from numba import jit
 
 from layers.layers import layers_type_dict
 
@@ -188,7 +188,7 @@ class Model:
         return loss, acc
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def _compiled_cross_entropy(predictions, labels):
     epsilon = 1e-10
     cost = -np.sum(labels.flatten() * np.log(predictions.flatten() + epsilon))

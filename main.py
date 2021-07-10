@@ -15,9 +15,9 @@ NUM_CATEGORIES = 10
 
 
 def load_data():
-    train_df = pd.read_csv(train_data_file, header=None)
-    val_df = pd.read_csv(validation_data_file, header=None)
-    test_df = pd.read_csv(test_data_file, header=None)
+    train_df = pd.read_csv(train_data_file, header=None, nrows=900)
+    val_df = pd.read_csv(validation_data_file, header=None, nrows=100)
+    test_df = pd.read_csv(test_data_file, header=None, nrows=100)
 
     X_train, y_train = _extract_data(train_df)
     X_val, y_val = _extract_data(val_df)
@@ -31,12 +31,14 @@ def _extract_data(df, is_test=False):
     image_size = 32
     image_size_squared = image_size ** 2
     num_channels = 3
-    images = np.zeros([len(x_data),num_channels, image_size, image_size])
+    images = np.zeros([len(x_data), num_channels, image_size, image_size])
     for c in range(num_channels):
         images_channel = x_data[:, image_size_squared * c:image_size_squared * (c + 1)]
         images_channel = images_channel.reshape(-1, image_size, image_size)
-        images[:,c, :, :] = images_channel
-
+        images[:, c, :, :] = images_channel
+    # images = images.reshape(len(x_data), -1)
+    # plt.imshow(images[0])
+    # plt.show()
     y_data = None
     if not is_test:
         y_data = np.eye(NUM_CATEGORIES)[df[0] - 1]
@@ -68,5 +70,6 @@ def run_experiments():
 
 
 if __name__ == '__main__':
+    np.random.seed(0)
     X_train, y_train, X_val, y_val, X_test, test_df = load_data()
     run_experiments()

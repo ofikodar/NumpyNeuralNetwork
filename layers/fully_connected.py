@@ -51,7 +51,7 @@ def _compiled_derive(cache, dz, weights):
 
 @jit(nopython=True)
 def _compiled_weight_update(weights, weights_gradients, lr):
-    weights_gradients = weights_gradients.sum(axis=0)
+    weights_gradients = weights_gradients.sum(axis=0) / weights_gradients.shape[0]
     weights = weights - lr * weights_gradients
     return weights
 

@@ -34,7 +34,7 @@ class MaxPoolLayer:
         pass
 
 
-# @jit(nopython=True)
+@jit(nopython=True)
 def _compiled_forward(layer_input, pool_size):
     C, H, W = layer_input.shape
     PH = pool_size

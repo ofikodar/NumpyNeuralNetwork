@@ -6,9 +6,9 @@ from scipy.signal import convolve2d
 class Conv2DLayer:
     def __init__(self, layer_description):
         self.type = layer_description['type']
-        num_kernels = layer_description['num_kernels']
+        num_kernels = layer_description['output_channels']
         kernel_size = layer_description['kernel_size']
-        num_channels = layer_description['num_channels']
+        num_channels = layer_description['input_channels']
         total_weights = num_channels * kernel_size ** 2
         weights = np.random.randn(num_kernels, num_channels, kernel_size, kernel_size) / np.sqrt(total_weights)
         bias = np.zeros(shape=[num_kernels, 1])
@@ -106,7 +106,8 @@ def _compiled_derive(cache, kernel_size, weights, dout):
 
 @jit(nopython=True)
 def _compiled_weight_update(weights, weights_gradients, lr):
-    weights_gradients = weights_gradients.sum(axis=0).reshape(weights.shape)
+    weights_gradients = weights_gradients.sum(axis=0) / weights_gradients.shape[0]
+    weights_gradients = weights_gradients.reshape(weights.shape)
     weights = weights - lr * weights_gradients
     return weights
 
