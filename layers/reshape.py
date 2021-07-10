@@ -68,7 +68,7 @@ def _compiled_derive(cache, dout, pool_size):
     # initialize gradient
     dx = np.zeros(x.shape)
 
-    dout_row = dout.reshape(C, outH * outW)
+    dout_row = dout.copy().reshape(C, outH * outW)
     neuron = 0
     for i in range(0, H - PH + 1, stride):
         for j in range(0, W - PW + 1,stride):
