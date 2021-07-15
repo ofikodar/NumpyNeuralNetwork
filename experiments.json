@@ -6,10 +6,10 @@
         "type": "conv2d",
         "kernel_size": 3,
         "input_channels": 3,
-        "output_channels": 32
+        "output_channels": 64
       },
       {
-        "type": "sigmoid"
+        "type": "leakyRelu"
       },
       {
         "type": "maxPooling",
@@ -18,33 +18,11 @@
             {
         "type": "conv2d",
         "kernel_size": 3,
-        "input_channels": 32,
+        "input_channels": 64,
         "output_channels": 128
       },
-            {
-        "type": "maxPooling",
-        "pool_size": 2
-      },
       {
-        "type": "sigmoid"
-      },
-            {
-        "type": "conv2d",
-        "kernel_size": 3,
-        "input_channels": 128,
-        "output_channels": 256
-      },
-      {
-        "type": "sigmoid"
-      },
-                  {
-        "type": "conv2d",
-        "kernel_size": 3,
-        "input_channels": 256,
-        "output_channels": 256
-      },
-      {
-        "type": "sigmoid"
+        "type": "leakyRelu"
       },
       {
         "type": "maxPooling",
@@ -55,31 +33,15 @@
       },
       {
         "type": "fc",
-        "num_nodes": 1000,
-        "previous_nodes": 4096
-      },
-      {
-        "type": "sigmoid"
-      },
-      {
-        "type": "fc",
-        "num_nodes": 1000,
-        "previous_nodes": 1000
-      },
-      {
-        "type": "sigmoid"
-      },
-      {
-        "type": "fc",
         "num_nodes": "output",
-        "previous_nodes": 1000
+        "previous_nodes": 8192
       },
       {
         "type": "softmax"
       }
     ],
-    "batch_size": 32,
-    "lr": 0.01,
+    "batch_size": 16,
+    "lr": 0.00001,
     "lr_decay": 0.8,
     "epochs": 1000,
     "lr_patience": 3,
