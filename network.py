@@ -26,7 +26,8 @@ class Model:
     def predict(self, x):
         a = x
         for i in range(self.num_layers):
-            a = self.layers[str(i)].forward(a)
+            layer = self.layers[str(i)]
+            a = layer.forward(a)
         prediction = a
         return prediction
 
