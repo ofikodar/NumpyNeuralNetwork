@@ -20,7 +20,6 @@ class Sigmoid:
 
 @jit(nopython=True)
 def _compiled_forward_sigmoid(layer_input):
-
     output = 1 / (1 + np.exp(-layer_input))
     return output
 
@@ -40,15 +39,13 @@ class LeakyRelu:
 
     def forward(self, layer_input):
         z = np.maximum(0, layer_input)
-
         self.cache = layer_input
 
         return z
 
     def derive(self, dz):
         layer_input = self.cache
-        dz = dz * (layer_input > 0)
-
+        dz = np.where(layer_input > 0, dz, 0)
         return dz
 
     def update_weights(self, lr):
@@ -82,19 +79,8 @@ def _compiled_forward_softmax(layer_input):
 
 if __name__ == '__main__':
     np.random.seed(42)
-    desc = {"type": "softmax"}
-    l = Softmax(desc)
-    inp = np.random.randn(64).reshape(-1, 1)
-
-    import time
-
-    s_t = time.time()
-    x = l.forward(inp)
-    print(time.time() - s_t)
-    s_t = time.time()
-    x = l.forward(inp)
-    print(time.time() - s_t)
-    s_t = time.time()
-    x = l.forward(inp)
-    print(time.time() - s_t)
-    print(x.sum())
+    desc = {"type": "LeakyRelu"}
+    l = LeakyRelu(desc)
+    inp = np.random.randn(10)
+    print(inp)
+    print(l.forward(inp))

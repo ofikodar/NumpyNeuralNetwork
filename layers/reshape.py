@@ -39,7 +39,7 @@ def _compiled_forward(layer_input, pool_size):
     C, H, W = layer_input.shape
     PH = pool_size
     PW = pool_size
-    stride = 2
+    stride = pool_size
     outH = int(1 + (H - PH) / stride)
     outW = int(1 + (W - PW) / stride)
 
@@ -64,7 +64,7 @@ def _compiled_derive(cache, dout, pool_size):
     H, W = x.shape[1], x.shape[2]
     PH = pool_size
     PW = pool_size
-    stride = 2
+    stride = pool_size
     # initialize gradient
     dx = np.zeros(x.shape)
 
@@ -87,13 +87,13 @@ def _compiled_derive(cache, dout, pool_size):
 if __name__ == '__main__':
     np.random.seed(42)
     desc = {"type": "maxPooling",
-            "pool_size": 2}
+            "pool_size": 8}
     l = MaxPoolLayer(desc)
-    inp = (np.random.randn(1, 8, 8) * 10).astype(int)
+    inp = (np.random.randn(1, 16, 16) * 10).astype(int)
     import time
-
     print(inp)
     x = l.forward(inp)
     s_t = time.time()
+    print(x)
     zzz = l.derive(x)
     print(time.time() - s_t)
