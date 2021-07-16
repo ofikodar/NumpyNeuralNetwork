@@ -8,8 +8,8 @@ class FCLayer:
         num_nodes = layer_description['num_nodes']
         prv_layer_shape = layer_description['previous_nodes']
 
-        weights = np.random.randn(num_nodes, prv_layer_shape) / np.sqrt(num_nodes)
-        bias = np.zeros(shape=[num_nodes, 1])
+        weights = np.random.randn(prv_layer_shape, num_nodes) / np.sqrt(num_nodes)
+        bias = np.zeros(shape=[num_nodes, ])
         self.weights = weights
         self.bias = bias
         self.weights_gradients = []
@@ -21,8 +21,8 @@ class FCLayer:
 
         return z
 
-    def derive(self, dz):
-        dh_prev, dw, db = _compiled_derive(self.cache, dz, self.weights)
+    def derive(self, dx):
+        dh_prev, dw, db = _compiled_derive(self.cache, dx, self.weights)
         self.weights_gradients.append(dw)
         self.bias_gradients.append(db)
         return dh_prev
@@ -35,14 +35,22 @@ class FCLayer:
         self.bias_gradients = []
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def _compiled_forward(layer_input, weights, bias):
-    z = np.dot(weights, layer_input) + bias
+    batch_size = layer_input.shape[0]
+    x = layer_input.reshape(batch_size, - 1)
+    z = x.dot(weights) + bias
     return z
 
 
-@jit(nopython=True)
-def _compiled_derive(cache, dz, weights):
+# @jit(nopython=True)
+def _compiled_derive(cache, dx, weights):
+
+    layer_input = cache
+    dw = layer_input.T.dot(dx)
+    print(dw.shape)
+    print(weights.shape)
+    exit()
     dw = np.dot(dz, cache.T)
     db = dz
     dh_prev = np.dot(weights.T, dz)
@@ -62,19 +70,9 @@ if __name__ == '__main__':
             "num_nodes": 10,
             "previous_nodes": 64}
     l = FCLayer(desc)
-    inp = np.random.randn(64).reshape(-1, 1)
+    inp = np.random.randn(64).reshape(1, -1)
 
     import time
 
     x = l.forward(inp)
-    _ = l.derive(x)
-    s_t = time.time()
-    _ = l.update_weights(0.01)
-
-    print(time.time() - s_t)
-    s_t = time.time()
-    _ = l.update_weights(0.01)
-    print(time.time() - s_t)
-    s_t = time.time()
-    _ = l.update_weights(0.01)
-    print(time.time() - s_t)
+    print(x)
