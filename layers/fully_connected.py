@@ -23,19 +23,16 @@ class FCLayer:
 
     def derive(self, dx):
         dh_prev, dw, db = _compiled_derive(self.cache, dx, self.weights)
-        self.weights_gradients.append(dw)
-        self.bias_gradients.append(db)
+        self.weights_gradients = dw
+        self.bias_gradients = db
         return dh_prev
 
     def update_weights(self, lr):
-        self.weights = _compiled_weight_update(self.weights, np.array(self.weights_gradients), lr)
-        self.weights_gradients = []
-
-        self.bias = _compiled_weight_update(self.bias, np.array(self.bias_gradients), lr)
-        self.bias_gradients = []
+        self.weights = self.weights - lr * self.weights_gradients
+        self.bias = self.bias - lr * self.bias_gradients
 
 
-# @jit(nopython=True)
+@jit(nopython=True)
 def _compiled_forward(layer_input, weights, bias):
     batch_size = layer_input.shape[0]
     x = layer_input.reshape(batch_size, - 1)
@@ -43,17 +40,12 @@ def _compiled_forward(layer_input, weights, bias):
     return z
 
 
-# @jit(nopython=True)
+@jit(nopython=True)
 def _compiled_derive(cache, dx, weights):
-
     layer_input = cache
     dw = layer_input.T.dot(dx)
-    print(dw.shape)
-    print(weights.shape)
-    exit()
-    dw = np.dot(dz, cache.T)
-    db = dz
-    dh_prev = np.dot(weights.T, dz)
+    db = dx.sum(axis=0)
+    dh_prev = dx.dot(weights.T)
     return dh_prev, dw, db
 
 
@@ -75,4 +67,5 @@ if __name__ == '__main__':
     import time
 
     x = l.forward(inp)
+    l.derive(np.random.randn(1, 10))
     print(x)

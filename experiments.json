@@ -7,15 +7,39 @@
       },
       {
         "type": "fc",
-        "num_nodes": "output",
+        "num_nodes": 1024,
         "previous_nodes": 3072
+      },
+      {
+        "type": "leakyRelu"
+      },
+            {
+        "type": "fc",
+        "num_nodes": 512,
+        "previous_nodes": 1024
+      },
+      {
+        "type": "leakyRelu"
+      },
+                  {
+        "type": "fc",
+        "num_nodes": 512,
+        "previous_nodes": 512
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "fc",
+        "num_nodes": "output",
+        "previous_nodes": 512
       },
       {
         "type": "softmax"
       }
     ],
-    "batch_size": 16,
-    "lr": 0.00001,
+    "batch_size": 32,
+    "lr": 0.0001,
     "lr_decay": 0.8,
     "epochs": 1000,
     "lr_patience": 3,

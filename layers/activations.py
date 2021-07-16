@@ -40,13 +40,12 @@ class LeakyRelu:
     def forward(self, layer_input):
         z = np.maximum(0, layer_input)
         self.cache = layer_input
-
         return z
 
-    def derive(self, dz):
+    def derive(self, dx):
         layer_input = self.cache
-        dz = np.where(layer_input > 0, dz, 0)
-        return dz
+        dx = dx * (layer_input > 0)
+        return dx
 
     def update_weights(self, lr):
         pass
@@ -58,29 +57,48 @@ class Softmax:
         self.cache = []
 
     def forward(self, layer_input):
-        self.cache = layer_input
         output = _compiled_forward_softmax(layer_input)
+        self.cache = output
         return output
 
-    def derive(self, a):
-        dz = self.cache - a
-        return dz
+    def derive(self, y):
+        dx = self.cache.copy()
+        batch_size = y.shape[0]
+        dx[np.arange(batch_size), y] -= 1
+        dx /= batch_size
+        return dx
 
     def update_weights(self, lr):
         pass
 
 
-@jit(nopython=True)
+# # @jit(nopython=True)
 def _compiled_forward_softmax(layer_input):
-    e_x = np.exp(layer_input - np.max(layer_input))
-    output = e_x / e_x.sum(axis=0)
+    sub_max = layer_input - np.max(layer_input, axis=1, keepdims=True)
+    sum_exp = np.sum(np.exp(sub_max), axis=1, keepdims=True)
+    output = np.exp(sub_max - np.log(sum_exp))
     return output
 
 
 if __name__ == '__main__':
     np.random.seed(42)
-    desc = {"type": "LeakyRelu"}
-    l = LeakyRelu(desc)
-    inp = np.random.randn(10)
-    print(inp)
-    print(l.forward(inp))
+    desc = {"type": "Softmax"}
+    l = Softmax(desc)
+    inp = np.random.randn(128, 10)
+    import time
+
+    s_t = time.time()
+    l.forward(inp)
+    print(time.time() - s_t)
+    s_t = time.time()
+    l.forward(inp)
+    print(time.time() - s_t)
+    s_t = time.time()
+    l.forward(inp)
+    print(time.time() - s_t)
+    s_t = time.time()
+    l.forward(inp)
+    print(time.time() - s_t)
+    s_t = time.time()
+    l.forward(inp)
+    print(time.time() - s_t)

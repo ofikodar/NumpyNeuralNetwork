@@ -15,9 +15,9 @@ NUM_CATEGORIES = 10
 
 
 def load_data():
-    train_df = pd.read_csv(train_data_file, header=None, nrows=2000)
-    val_df = pd.read_csv(validation_data_file, header=None, nrows=200)
-    test_df = pd.read_csv(test_data_file, header=None, nrows=100)
+    train_df = pd.read_csv(train_data_file, header=None)
+    val_df = pd.read_csv(validation_data_file, header=None)
+    test_df = pd.read_csv(test_data_file, header=None, nrows=1000)
 
     X_train, y_train = _extract_data(train_df)
     X_val, y_val = _extract_data(val_df)
@@ -41,7 +41,7 @@ def _extract_data(df, is_test=False):
     # plt.show()
     y_data = None
     if not is_test:
-        y_data = np.eye(NUM_CATEGORIES)[df[0] - 1]
+        y_data = df[0] - 1
     return images, y_data
 
 

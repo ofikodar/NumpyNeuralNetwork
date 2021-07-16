@@ -8,7 +8,8 @@ class FlattenLayer:
 
     def forward(self, layer_input):
         self.cache = layer_input
-        return layer_input.reshape(-1, 1)
+        batch_size = layer_input.shape[0]
+        return layer_input.reshape(batch_size, -1)
 
     def derive(self, dz):
         return dz.reshape(self.cache.shape)

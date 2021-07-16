@@ -31,28 +31,20 @@ class Model:
         prediction = a
         return prediction
 
-    def backprop(self, x, y):
-        dz = self.layers[str(self.last_layer_index)].derive(y)
+    def backprop(self, y):
+        dx = self.layers[str(self.last_layer_index)].derive(y)
         for i in range(1, self.num_layers):
-            dz = self.layers[str(self.last_layer_index - i)].derive(dz)
+            dx = self.layers[str(self.last_layer_index - i)].derive(dx)
 
     def update_weights(self, lr):
         for layer in range(self.num_layers):
             self.layers[str(layer)].update_weights(lr)
-            #
-            # try:
-            #     print(self.layers[str(layer)].type)
-            #     print(np.array(self.layers[str(layer)].weights_gradients).shape)
-            #     print(np.array(self.layers[str(layer)].weights).shape)
-            #     self.layers[str(layer)].update_weights(lr)
-            #
-            # except:
-            #     pass
-            # print("------------------")
-    def cross_entropy(self, predictions, labels):
 
-        cost = _compiled_cross_entropy(predictions, labels)
-        return cost
+    def calc_loss(self, predictions, labels):
+        batch_size = predictions.shape[0]
+        log_prob = np.log(predictions)
+        loss = -np.sum(log_prob[np.arange(batch_size), labels]) / batch_size
+        return loss
 
     def fit(self, X_train, X_test, y_train, y_test, batch_size=32, lr=0.01,
             lr_decay=0.8, lr_patience=3, es_patience=7,
@@ -78,11 +70,6 @@ class Model:
         for e in range(epochs):
             print("Epoch num:", e)
 
-            epoch_correct_samples = 0
-            epoch_count_samples = 0
-
-            epoch_aggregated_log = 0
-
             np.random.shuffle(idx)
             _X_train = X_train[idx]
             _y_train = y_train[idx]
@@ -90,21 +77,13 @@ class Model:
             for batch_idx in range(num_batches):
                 batch_x = _X_train[batch_idx * batch_size:(batch_idx + 1) * batch_size]
                 batch_y = _y_train[batch_idx * batch_size:(batch_idx + 1) * batch_size]
-                for x, y in zip(batch_x, batch_y):
-                    y = np.expand_dims(y, axis=1)
-                    if len(x.shape) == 1:
-                        x = np.expand_dims(x, axis=1)
-                    p = self.predict(x)
-                    self.backprop(x, y)
-                    epoch_aggregated_log, epoch_correct_samples = self.update_epoch_training_history(p, y,
-                                                                                                     epoch_aggregated_log,
-                                                                                                     epoch_correct_samples)
-                    epoch_count_samples+=1
-                self.update_weights(lr)
-            train_loss, train_acc = self.train_report(epoch_count_samples, epoch_aggregated_log, epoch_correct_samples)
-            # val_loss, val_acc = self.val_report(X_train, y_train)
 
-            val_loss, val_acc = self.val_report(X_test, y_test)
+                self.predict(batch_x)
+                self.backprop(batch_y)
+                self.update_weights(lr)
+
+            train_acc, train_loss = self.report(X_test, y_test, name='Train')
+            val_loss, val_acc = self.report(X_test, y_test, name='Val')
 
             history['train_acc'].append(train_acc)
             history['train_loss'].append(train_loss)
@@ -150,47 +129,14 @@ class Model:
             plt.savefig(output_dir + f"{key} - {self.model_name}.jpg")
             plt.clf()
 
-    def update_epoch_training_history(self, p, y, loss, acc):
-        loss += self.cross_entropy(p, np.expand_dims(y, 1))
-        if np.argmax(p) == np.argmax(y):
-            acc += 1
-        return loss, acc
-
-    def train_report(self, epoch_count_samples, loss, acc):
-        name = 'Train'
-        loss /= epoch_count_samples
-        acc /= epoch_count_samples
-        acc = 100 * acc
-
-        print(f"{name} loss:", round(loss, 4))
-        print(f"{name} Acc:", round(acc, 4))
-
-        return loss, acc
-
-    def val_report(self, x_data, y_data):
-        name = "Val"
-        loss = 0
-        acc = 0
-        for x, y in zip(x_data, y_data):
-            if len(x.shape) == 1:
-                x = np.expand_dims(x, 1)
-            p = self.predict(x)
-            loss += self.cross_entropy(p, np.expand_dims(y, 1))
-            if np.argmax(p) == np.argmax(y):
-                acc += 1
-
-        loss /= x_data.shape[0]
+    def report(self, x_data, y_data, name):
+        pred = self.predict(x_data)
+        loss = self.calc_loss(pred, y_data)
+        acc = np.sum(pred.argmax(axis=1) == y_data)
         acc /= x_data.shape[0]
-        acc = 100 * acc
+        acc *= 100
 
         print(f"{name} loss:", round(loss, 4))
         print(f"{name} Acc:", round(acc, 4))
 
         return loss, acc
-
-
-# @jit(nopython=True)
-def _compiled_cross_entropy(predictions, labels):
-    epsilon = 1e-10
-    cost = -np.sum(labels.flatten() * np.log(predictions.flatten() + epsilon))
-    return cost
