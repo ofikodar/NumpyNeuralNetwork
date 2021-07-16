@@ -1,23 +1,23 @@
 import numpy as np
-from numba import jit
+from numba import jit, njit
 from scipy.signal import convolve2d
 
 
 class Conv2DLayer:
     def __init__(self, layer_description):
         self.type = layer_description['type']
-        num_kernels = layer_description['output_channels']
+        output_channels = layer_description['output_channels']
         kernel_size = layer_description['kernel_size']
-        num_channels = layer_description['input_channels']
-        total_weights = num_channels * kernel_size ** 2
-        weights = np.random.randn(num_kernels, num_channels, kernel_size, kernel_size) / np.sqrt(total_weights)
-        bias = np.zeros(shape=[num_kernels, 1])
+        input_channels = layer_description['input_channels']
+        total_weights = input_channels * kernel_size ** 2
+        weights = np.random.randn(output_channels, input_channels, kernel_size, kernel_size) / np.sqrt(total_weights)
+        bias = np.zeros(shape=[output_channels])
 
-        self.num_kernels = num_kernels
+        self.output_channels = output_channels
         self.kernel_size = kernel_size
         self.weights = weights
         self.bias = bias
-
+        self.cache = None
         self.weights_gradients = []
         self.bias_gradients = []
 
@@ -25,129 +25,98 @@ class Conv2DLayer:
         self.cache, layer_output = _compiled_forward(layer_input, self.weights, self.bias)
         return layer_output
 
-    def derive(self, dout):
-        dx, dw, db = _compiled_derive(self.cache, self.kernel_size, self.weights, dout)
+    def derive(self, dx):
+        dx, dw, db = _compiled_derive(self.cache, self.weights, dx)
 
-        self.weights_gradients.append(dw)
-        self.bias_gradients.append(db)
+        self.weights_gradients = dw
+        self.bias_gradients = db
 
         return dx
 
     def update_weights(self, lr):
-        self.weights = _compiled_weight_update(self.weights, np.array(self.weights_gradients), lr)
-        self.weights_gradients = []
+        self.weights = self.weights - lr * self.weights_gradients
+        self.bias = self.bias - lr * self.bias_gradients
 
-        self.bias = _compiled_weight_update(self.bias, np.array(self.bias_gradients), lr)
-        self.bias_gradients = []
-
-
-@jit(nopython=True)
 def _compiled_forward(layer_input, weights, bias):
-    pad = 1
-    stride = 1
-    C, H, W = layer_input.shape
-    F, C, FH, FW = weights.shape
+    batch_size, input_channels, image_h, image_w = layer_input.shape
+    output_channels = weights.shape[0]
+    kernel_size = weights.shape[-1]
+    output_image = np.zeros((batch_size, output_channels, image_h, image_w))
 
-    outH = 1 + (H - FH + 2 * pad) / stride
-    outW = 1 + (W - FW + 2 * pad) / stride
-    outH = int(outH)
-    outW = int(outW)
+    pad = int((kernel_size - 1 / 2))
+    half_pad = int(pad / 2)
+    x_pad = np.zeros((batch_size, input_channels, image_h + pad, image_w + pad))
+    x_pad[:, :, half_pad:-half_pad, half_pad:-half_pad] = layer_input
+    image_h_pad, image_w_pad = x_pad.shape[2], x_pad.shape[3]
+    w_row = weights.reshape(output_channels, -1)
 
-    x_pad = np.zeros((C, H + 2 * pad, W + 2 * pad))
-    x_pad[:, pad:-pad, pad:-pad] = layer_input
-
-    H_pad, W_pad = x_pad.shape[1], x_pad.shape[2]
-
-    # create w_row matrix
-    w_row = weights.reshape(F, C * FH * FW)  # [F x C*FH*FW]
-
-    x_col = np.zeros((C * FH * FW, outH * outW))  # [C*FH*FW x H'*W']
-    neuron = 0
-    for i in range(0, H_pad - FH + 1, stride):
-        for j in range(0, W_pad - FW + 1, stride):
-            x_col[:, neuron] = x_pad[:, i:i + FH, j:j + FW].copy().reshape(C * FH * FW)
-            neuron += 1
-
-    layer_output = (w_row.dot(x_col) + bias.reshape(F, 1)).copy().reshape(F, outH, outW)
+    x_col = np.zeros((w_row.shape[1], image_h * image_w))
+    for index in range(batch_size):
+        neuron = 0
+        for i in range(0, image_h_pad - kernel_size + 1):
+            for j in range(0, image_w_pad - kernel_size + 1):
+                flatten = x_pad[index, :, i:i + kernel_size, j:j + kernel_size].copy().reshape(-1)
+                x_col[:, neuron] = flatten
+                neuron += 1
+        output_image[index] = (w_row.dot(x_col) + bias.copy().reshape(output_channels, 1)).reshape(output_channels,
+                                                                                                   image_h, image_w)
     cache = x_pad
+    return cache, output_image.reshape(batch_size,output_channels,image_h,image_w)
 
-    return cache, layer_output
 
+def _compiled_derive(cache, weights, dx):
+    x_pad = cache.copy()
+    image_h_pad = x_pad.shape[2]
+    image_w_pad = x_pad.shape[3]
 
-@jit(nopython=True)
-def _compiled_derive(cache, kernel_size, weights, dout):
-    x_pad = cache
-    FH = kernel_size
-    FW = kernel_size
-    F, outH, outW = dout.shape
-    C, Hpad, Wpad = x_pad.shape
-    stride = 1
-    pad = 1
+    batch_size, out_channels, image_h, image_w = dx.shape
+    input_channels = x_pad.shape[1]
+    kernel_size = weights.shape[-1]
+    pad = int((kernel_size - 1 / 2))
+    half_pad = int(pad / 2)
 
-    # create w_row matrix
-    w_row = weights.reshape(F, C * FH * FW)  # [F x C*FH*FW]
+    dx_next = np.zeros((batch_size, input_channels, image_h, image_w))
+    dw, db = np.zeros(weights.shape), np.zeros(out_channels)
 
-    # create x_col matrix with values that each neuron is connected to
-    x_col = np.zeros((C * FH * FW, outH * outW))  # [C*FH*FW x H'*W']
-    out_col = dout.copy().reshape(F, outH * outW)  # [F x H'*W']
-    w_out = w_row.T.dot(out_col)  # [C*FH*FW x H'*W']
-    dx_cur = np.zeros((C, Hpad, Wpad))
-    neuron = 0
-    for i in range(0, Hpad - FH + 1, stride):
-        for j in range(0, Wpad - FW + 1, stride):
-            dx_cur[:, i:i + FH, j:j + FW] += w_out[:, neuron].copy().reshape(C, FH, FW)
-            x_col[:, neuron] = x_pad[:, i:i + FH, j:j + FW].copy().reshape(C * FH * FW)
-            neuron += 1
-    dx = dx_cur[:, pad:-pad, pad:-pad]
-    dw = out_col.dot(x_col.T).reshape(F, C, FH, FW)
-    db = out_col.sum(axis=1)
+    w_row = weights.reshape(out_channels, -1)
+    x_col = np.zeros((w_row.shape[1], image_h * image_w))
+    for index in range(batch_size):
+        out_col = dx[index].reshape(out_channels, -1)
+        w_out = w_row.T.dot(out_col)
+        dx_cur = np.zeros((input_channels, image_h_pad, image_w_pad))
+        neuron = 0
+        for i in range(0, image_h_pad - kernel_size + 1):
+            for j in range(0, image_w_pad - kernel_size + 1):
+                dx_cur[:, i:i + kernel_size, j:j + kernel_size] += w_out[:, neuron].reshape(input_channels, kernel_size,
+                                                                                            kernel_size)
+                x_col[:, neuron] = x_pad[index, :, i:i + kernel_size, j:j + kernel_size].reshape(-1)
+                neuron += 1
+        dx_next[index] = dx_cur[:, half_pad:-half_pad, half_pad:-half_pad]
+        dw += out_col.dot(x_col.T).reshape(out_channels, input_channels, kernel_size, kernel_size)
+        db += out_col.sum(axis=1)
+
+    dx = dx_next
     return dx, dw, db
-
-
-@jit(nopython=True)
-def _compiled_weight_update(weights, weights_gradients, lr):
-    weights_gradients = weights_gradients.sum(axis=0) / weights_gradients.shape[0]
-    weights_gradients = weights_gradients.reshape(weights.shape)
-    weights = weights - lr * weights_gradients
-    return weights
 
 
 if __name__ == '__main__':
     np.random.seed(69)
     desc = {"type": "conv2d",
-            "kernel_size": 5,
-            "num_kernels": 4,
-            "num_channels": 3}
+            "kernel_size": 3,
+            "input_channels": 3,
+            "output_channels": 256}
     l = Conv2DLayer(desc)
-    inp = np.random.randn(3, 16, 16)
+    inp = np.random.randn(1, 3, 16, 16)
     import time
 
     s_t = time.time()
     out = l.forward(inp)
-
-    print(time.time() - s_t)
-
-    s_t = time.time()
-    out = l.forward(inp)
-
-    print(time.time() - s_t)
-    s_t = time.time()
-    out = l.forward(inp)
-
-    print(time.time() - s_t)
-    exit()
-    #
-    # x = l.forward(x)
-    # x = l.derive(x)
-    #
-    # print(x)
-
-    inp = np.random.randn(32, 32, 4)
-    s_t = time.time()
-    print(time.time() - s_t)
-    s_t = time.time()
-    l.derive(inp)
-    print(time.time() - s_t)
-    s_t = time.time()
-    l.derive(inp)
-    print(time.time() - s_t)
+    e_t = time.time()
+    print(e_t-s_t)
+    _ = l.derive(out)
+    e_t = time.time()
+    print(e_t-s_t)
+    _ = l.derive(out)
+    e_t = time.time()
+    print(e_t-s_t)
+    # out = l.derive(out)
