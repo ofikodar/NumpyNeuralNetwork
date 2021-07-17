@@ -6,7 +6,7 @@ class FlattenLayer:
     def __init__(self, layer_description):
         self.type = layer_description['type']
 
-    def forward(self, layer_input):
+    def forward(self, layer_input,is_train):
         self.cache = layer_input
         batch_size = layer_input.shape[0]
         return layer_input.reshape(batch_size, -1)
@@ -23,7 +23,7 @@ class MaxPoolLayer:
         self.type = layer_description['type']
         self.pool_size = layer_description['pool_size']
 
-    def forward(self, layer_input):
+    def forward(self, layer_input,is_train):
         self.cache, pool_output = _compiled_forward(layer_input, self.pool_size)
         return pool_output
 

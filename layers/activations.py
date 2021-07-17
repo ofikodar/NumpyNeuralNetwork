@@ -37,7 +37,7 @@ class LeakyRelu:
         self.type = layer_description['type']
         self.alpha = 0.1
 
-    def forward(self, layer_input):
+    def forward(self, layer_input, is_train):
         z = np.maximum(0, layer_input)
         self.cache = layer_input
         return z
@@ -56,7 +56,7 @@ class Softmax:
         self.type = layer_description['type']
         self.cache = []
 
-    def forward(self, layer_input):
+    def forward(self, layer_input, is_train):
         output = _compiled_forward_softmax(layer_input)
         self.cache = output
         return output

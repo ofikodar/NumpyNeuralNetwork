@@ -21,7 +21,7 @@ class Conv2DLayer:
         self.weights_gradients = []
         self.bias_gradients = []
 
-    def forward(self, layer_input):
+    def forward(self, layer_input, is_train):
         self.cache, layer_output = _compiled_forward(layer_input, self.weights, self.bias)
         return layer_output
 
@@ -36,6 +36,7 @@ class Conv2DLayer:
     def update_weights(self, lr):
         self.weights = self.weights - lr * self.weights_gradients
         self.bias = self.bias - lr * self.bias_gradients
+
 
 def _compiled_forward(layer_input, weights, bias):
     batch_size, input_channels, image_h, image_w = layer_input.shape
@@ -61,7 +62,7 @@ def _compiled_forward(layer_input, weights, bias):
         output_image[index] = (w_row.dot(x_col) + bias.copy().reshape(output_channels, 1)).reshape(output_channels,
                                                                                                    image_h, image_w)
     cache = x_pad
-    return cache, output_image.reshape(batch_size,output_channels,image_h,image_w)
+    return cache, output_image.reshape(batch_size, output_channels, image_h, image_w)
 
 
 def _compiled_derive(cache, weights, dx):
@@ -112,11 +113,11 @@ if __name__ == '__main__':
     s_t = time.time()
     out = l.forward(inp)
     e_t = time.time()
-    print(e_t-s_t)
+    print(e_t - s_t)
     _ = l.derive(out)
     e_t = time.time()
-    print(e_t-s_t)
+    print(e_t - s_t)
     _ = l.derive(out)
     e_t = time.time()
-    print(e_t-s_t)
+    print(e_t - s_t)
     # out = l.derive(out)

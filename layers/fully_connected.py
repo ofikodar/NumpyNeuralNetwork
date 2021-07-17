@@ -15,7 +15,7 @@ class FCLayer:
         self.weights_gradients = []
         self.bias_gradients = []
 
-    def forward(self, layer_input):
+    def forward(self, layer_input, is_train):
         self.cache = layer_input
         z = _compiled_forward(layer_input, self.weights, self.bias)
 

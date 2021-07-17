@@ -23,11 +23,11 @@ class Model:
         self.last_layer_index = self.num_layers - 1
         self.best_model = self.layers.copy()
 
-    def predict(self, x):
+    def predict(self, x,is_train=False):
         a = x
         for i in range(self.num_layers):
             layer = self.layers[str(i)]
-            a = layer.forward(a)
+            a = layer.forward(a,is_train)
         prediction = a
         return prediction
 
