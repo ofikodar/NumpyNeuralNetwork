@@ -15,8 +15,8 @@ NUM_CATEGORIES = 10
 
 
 def load_data():
-    train_df = pd.read_csv(train_data_file, header=None)
-    val_df = pd.read_csv(validation_data_file, header=None)
+    train_df = pd.read_csv(train_data_file, header=None, nrows=1000)
+    val_df = pd.read_csv(validation_data_file, header=None, nrows=100)
     test_df = pd.read_csv(test_data_file, header=None, nrows=1000)
 
     X_train, y_train = _extract_data(train_df)

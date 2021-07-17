@@ -3,36 +3,51 @@
     "name": "experiment_1",
     "layers": [
       {
+        "type": "conv2d",
+        "kernel_size": 3,
+        "input_channels": 3,
+        "output_channels": 32
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "maxPooling",
+        "pool_size": 2
+      },
+            {
+        "type": "conv2d",
+        "kernel_size": 3,
+        "input_channels": 32,
+        "output_channels": 64
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "maxPooling",
+        "pool_size": 2
+      },
+                 {
+        "type": "conv2d",
+        "kernel_size": 3,
+        "input_channels": 64,
+        "output_channels": 128
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "maxPooling",
+        "pool_size": 2
+      },
+      {
         "type": "flatten"
       },
       {
         "type": "fc",
-        "num_nodes": 1024,
-        "previous_nodes": 3072
-      },
-      {
-        "type": "leakyRelu"
-      },
-            {
-        "type": "fc",
-        "num_nodes": 512,
-        "previous_nodes": 1024
-      },
-      {
-        "type": "leakyRelu"
-      },
-                  {
-        "type": "fc",
-        "num_nodes": 512,
-        "previous_nodes": 512
-      },
-      {
-        "type": "leakyRelu"
-      },
-      {
-        "type": "fc",
         "num_nodes": "output",
-        "previous_nodes": 512
+        "previous_nodes": 2048
       },
       {
         "type": "softmax"

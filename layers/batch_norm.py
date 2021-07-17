@@ -4,118 +4,86 @@ import numpy as np
 class BNLayer:
     def __init__(self, layer_description):
         self.type = layer_description['type']
-        num_nodes = layer_description['num_nodes']
-        prv_layer_shape = layer_description['previous_nodes']
+        self.input_channels = layer_description['input_channels']
+        num_nodes = self.input_channels
 
-        weights = np.random.randn(num_nodes, prv_layer_shape) / np.sqrt(num_nodes)
-        bias = np.zeros(shape=[num_nodes, 1])
-        self.weights = weights
-        self.bias = bias
+        self.gamma = np.random.randn(num_nodes) / np.sqrt(num_nodes)
+        self.beta = np.random.randn(num_nodes) / np.sqrt(num_nodes)
+        self.gamma_gradients = []
+        self.beta_gradients = []
+        self.cache = []
+        self.std = []
         self.running_mean = 0
         self.running_var = 0
-        self.eps = 1e-5
-        self.momentum = 0.9
-        self.weights_gradients = []
-        self.bias_gradients = []
 
-    def forward(self, layer_input):
-        self.cache = layer_input
-        z = _compiled_forward(layer_input, self.weights, self.bias)
+    def forward(self, layer_input, is_train=False):
+        batch_size, channels, input_h, input_w = layer_input.shape
+        layer_input = layer_input.copy().transpose(0, 2, 3, 1).reshape(-1, self.input_channels)
+        forward_input = [layer_input, self.gamma, self.beta, self.running_mean, self.running_var, is_train]
+        layer_output, self.running_mean, self.running_var, self.cache, self.gamma, self.std = _compiled_forward(
+            *forward_input)
+        layer_output = layer_output.reshape(batch_size, self.input_channels, input_h, input_w).transpose(0, 3, 1, 2)
+        return layer_output
 
-        return z
+    def derive(self, dx):
+        batch_size, channels, input_h, input_w = dx.shape
 
-    def derive(self, dz):
-        dh_prev, dw, db = _compiled_derive(self.cache, dz, self.weights)
-        self.weights_gradients.append(dw)
-        self.bias_gradients.append(db)
-        return dh_prev
+        dx = dx.copy().transpose(0, 2, 3, 1).reshape(-1, self.input_channels)
+        dx, self.gamma_gradients, self.beta_gradients = _compiled_derive(self.cache, self.gamma, self.std, dx)
+        dx = dx.reshape(batch_size, self.input_channels, input_h, input_w).transpose(0, 3, 1, 2)
+        return dx
 
     def update_weights(self, lr):
-        self.weights = _compiled_weight_update(self.weights, np.array(self.weights_gradients), lr)
-        self.weights_gradients = []
-
-        self.bias = _compiled_weight_update(self.bias, np.array(self.bias_gradients), lr)
-        self.bias_gradients = []
+        self.gamma_gradients = self.gamma - lr * self.gamma_gradients
+        self.gamma_gradients = self.bias - lr * self.beta_gradients
 
 
-def _compiled_forward(layer_input, gamma, beta, mode,running_mean,running_var,eps,momentum):
-    N, C, H, W = layer_input.shape
-
-    x_flat = layer_input.transpose(0, 2, 3, 1).reshape(-1, C)
-
-    D = C
-
-    out, cache = None, None
-    if mode == 'train':
-        # Compute output
-        mu = x_flat.mean(axis=0)
-        xc = x_flat - mu
-        var = np.mean(xc ** 2, axis=0)
-        std = np.sqrt(var + eps)
-        xn = xc / std
-        out = gamma * xn + beta
-
-        cache = (mode, x_flat, gamma, xc, std, xn, out)
-
-        # Update running average of mean
-        running_mean *= momentum
-        running_mean += (1 - momentum) * mu
-
-        # Update running average of variance
-        running_var *= momentum
-        running_var += (1 - momentum) * var
+def _compiled_forward(layer_input, gamma, beta, running_mean, running_var, is_train):
+    eps = 1e-5
+    momentum = 0.9
+    cache = layer_input
+    std = None
+    if is_train:
+        mu = layer_input.mean(axis=0)
+        var = layer_input.var(axis=0) + eps
+        std = np.sqrt(var)
+        z = (layer_input - mu) / std
+        layer_output = gamma * z + beta
+        running_mean = momentum * running_mean + (1 - momentum) * mu
+        running_var = momentum * running_var + (1 - momentum) * (std ** 2)
+        cache = z
     else:
-        # Using running mean and variance to normalize
-        std = np.sqrt(running_var + eps)
-        xn = (x_flat - running_mean) / std
-        out = gamma * xn + beta
-        cache = (mode, x_flat, xn, gamma, beta, std)
+        layer_output = gamma * (layer_input - running_mean) / np.sqrt(running_var + eps) + beta
 
-    # Store the updated running means back into bn_param
-
-    running_mean = running_mean
-    running_var = running_var
-    return out, cache
+    return layer_output, running_mean, running_var, cache, gamma, std
 
 
-def batchnorm_backward(dout, cache):
-    """
-    Backward pass for batch normalization.
+def _compiled_derive(cache, gamma, std, dx):
+    db = dx.sum(axis=0)
+    dg = np.sum(dx * cache, axis=0)
 
-    For this implementation, you should write out a computation graph for
-    batch normalization on paper and propagate gradients backward through
-    intermediate nodes.
+    batch_size = dx.shape[0]
+    dz = dx * gamma
+    dz_sum = np.sum(dz, axis=0)
+    dz_mean = dz_sum / batch_size
+    dz_sub = dz_sum - dz_mean
+    dx_next = dz_sub - np.sum(dz * cache, axis=0) * cache / batch_size
+    dx_next /= std
+    dx = dx_next
+    return dx, dg, db
 
-    Inputs:
-    - dout: Upstream derivatives, of shape (N, D)
-    - cache: Variable of intermediates from batchnorm_forward.
 
-    Returns a tuple of:
-    - dx: Gradient with respect to inputs x, of shape (N, D)
-    - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
-    - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
-    """
-    mode = cache[0]
-    if mode == 'train':
-        mode, x, gamma, xc, std, xn, out = cache
+if __name__ == '__main__':
+    np.random.seed(42)
+    desc = {"type": "fc",
+            "input_channels": 3}
+    l = BNLayer(desc)
+    inp = np.random.randn(1, 3, 16, 16) * 100
 
-        N = x.shape[0]
-        dbeta = dout.sum(axis=0)
-        dgamma = np.sum(xn * dout, axis=0)
-        dxn = gamma * dout
-        dxc = dxn / std
-        dstd = -np.sum((dxn * xc) / (std * std), axis=0)
-        dvar = 0.5 * dstd / std
-        dxc += (2.0 / N) * xc * dvar
-        dmu = np.sum(dxc, axis=0)
-        dx = dxc - dmu / N
-    elif mode == 'test':
-        mode, x, xn, gamma, beta, std = cache
-        dbeta = dout.sum(axis=0)
-        dgamma = np.sum(xn * dout, axis=0)
-        dxn = gamma * dout
-        dx = dxn / std
-    else:
-        raise ValueError(mode)
+    import time
 
-    return dx, dgamma, dbeta
+    print(inp)
+    x = l.forward(inp, is_train=True)
+
+    # l.derive(np.random.randn(1, 64))
+    # print(x)
