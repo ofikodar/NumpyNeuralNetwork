@@ -54,7 +54,7 @@ class LeakyRelu:
 class Softmax:
     def __init__(self, layer_description):
         self.type = layer_description['type']
-        self.cache = []
+        self.cache = None
 
     def forward(self, layer_input, is_train):
         output = _compiled_forward_softmax(layer_input)
@@ -64,7 +64,7 @@ class Softmax:
     def derive(self, y):
         dx = self.cache.copy()
         batch_size = y.shape[0]
-        idx = np.array(range(batch_size)).astype(int)
+        idx = np.arange(batch_size)
         dx[idx, y] -= 1
         dx /= batch_size
         return dx
