@@ -71,7 +71,7 @@ class Softmax:
         pass
 
 
-# # def _compiled_forward_softmax(layer_input):
+def _compiled_forward_softmax(layer_input):
     sub_max = layer_input - np.max(layer_input, axis=1, keepdims=True)
     sum_exp = np.sum(np.exp(sub_max), axis=1, keepdims=True)
     output = np.exp(sub_max - np.log(sum_exp))
