@@ -64,7 +64,7 @@ class Softmax:
     def derive(self, y):
         dx = self.cache.copy()
         batch_size = y.shape[0]
-        dx[np.arange(batch_size), y] -= 1
+        dx[np.arange(batch_size).astype(int), y.astype(int)] -= 1
         dx /= batch_size
         return dx
 
