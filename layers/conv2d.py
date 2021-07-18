@@ -37,7 +37,6 @@ class Conv2DLayer:
         self.weights = self.weights - lr * self.weights_gradients
         self.bias = self.bias - lr * self.bias_gradients
 
-@njit()
 def _compiled_forward(layer_input, weights, bias):
     batch_size, input_channels, image_h, image_w = layer_input.shape
     output_channels = weights.shape[0]

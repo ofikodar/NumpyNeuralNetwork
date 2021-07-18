@@ -35,8 +35,7 @@ class MaxPoolLayer:
         pass
 
 
-# @jit(nopython=True)
-def _compiled_forward(layer_input, pool_size):
+# def _compiled_forward(layer_input, pool_size):
     batch_size, channels, image_h, image_w = layer_input.shape
     pool_out_h = int(1 + (image_h - pool_size) / pool_size)
     pool_out_w = int(1 + (image_w - pool_size) / pool_size)
@@ -57,8 +56,7 @@ def _compiled_forward(layer_input, pool_size):
     return cache, pool_output
 
 
-# @jit(nopython=True)
-def _compiled_derive(cache, dx, pool_size):
+# def _compiled_derive(cache, dx, pool_size):
     layer_input = cache
     batch_size, channels, pool_output_h, pool_output_w = dx.shape
     image_h, image_w = layer_input.shape[2], layer_input.shape[3]

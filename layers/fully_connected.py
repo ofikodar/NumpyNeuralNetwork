@@ -32,7 +32,6 @@ class FCLayer:
         self.bias = self.bias - lr * self.bias_gradients
 
 
-@jit(nopython=True)
 def _compiled_forward(layer_input, weights, bias):
     batch_size = layer_input.shape[0]
     x = layer_input.reshape(batch_size, - 1)
@@ -40,7 +39,6 @@ def _compiled_forward(layer_input, weights, bias):
     return z
 
 
-@jit(nopython=True)
 def _compiled_derive(cache, dx, weights):
     layer_input = cache
     dw = layer_input.T.dot(dx)
@@ -49,7 +47,6 @@ def _compiled_derive(cache, dx, weights):
     return dh_prev, dw, db
 
 
-@jit(nopython=True)
 def _compiled_weight_update(weights, weights_gradients, lr):
     weights_gradients = weights_gradients.sum(axis=0) / weights_gradients.shape[0]
     weights = weights - lr * weights_gradients

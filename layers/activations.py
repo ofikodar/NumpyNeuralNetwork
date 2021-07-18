@@ -18,13 +18,11 @@ class Sigmoid:
         pass
 
 
-@jit(nopython=True)
 def _compiled_forward_sigmoid(layer_input):
     output = 1 / (1 + np.exp(-layer_input))
     return output
 
 
-@jit(nopython=True)
 def _compiled_derive_sigmoid(dz, sigmoid_z):
     d_sigmoid = sigmoid_z * (1 - sigmoid_z)
     output = dz * d_sigmoid
@@ -73,8 +71,7 @@ class Softmax:
         pass
 
 
-# # @jit(nopython=True)
-def _compiled_forward_softmax(layer_input):
+# # def _compiled_forward_softmax(layer_input):
     sub_max = layer_input - np.max(layer_input, axis=1, keepdims=True)
     sum_exp = np.sum(np.exp(sub_max), axis=1, keepdims=True)
     output = np.exp(sub_max - np.log(sum_exp))
