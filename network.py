@@ -23,11 +23,11 @@ class Model:
         self.last_layer_index = self.num_layers - 1
         self.best_model = self.layers.copy()
 
-    def predict(self, x,is_train=False):
+    def predict(self, x, is_train=False):
         a = x
         for i in range(self.num_layers):
             layer = self.layers[str(i)]
-            a = layer.forward(a,is_train)
+            a = layer.forward(a, is_train)
         prediction = a
         return prediction
 
@@ -78,7 +78,7 @@ class Model:
                 batch_x = _X_train[batch_idx * batch_size:(batch_idx + 1) * batch_size]
                 batch_y = _y_train[batch_idx * batch_size:(batch_idx + 1) * batch_size]
 
-                self.predict(batch_x)
+                self.predict(batch_x, is_train=True)
                 self.backprop(batch_y)
                 self.update_weights(lr)
 

@@ -17,25 +17,27 @@ class BNLayer:
         self.running_var = 0
 
     def forward(self, layer_input, is_train=False):
+
         batch_size, channels, input_h, input_w = layer_input.shape
         layer_input = layer_input.copy().transpose(0, 2, 3, 1).reshape(-1, self.input_channels)
         forward_input = [layer_input, self.gamma, self.beta, self.running_mean, self.running_var, is_train]
         layer_output, self.running_mean, self.running_var, self.cache, self.gamma, self.std = _compiled_forward(
             *forward_input)
-        layer_output = layer_output.reshape(batch_size, self.input_channels, input_h, input_w).transpose(0, 3, 1, 2)
+        layer_output = layer_output.reshape(batch_size, input_h, input_w, self.input_channels).transpose(0, 3, 1, 2)
+
         return layer_output
 
     def derive(self, dx):
         batch_size, channels, input_h, input_w = dx.shape
-
         dx = dx.copy().transpose(0, 2, 3, 1).reshape(-1, self.input_channels)
         dx, self.gamma_gradients, self.beta_gradients = _compiled_derive(self.cache, self.gamma, self.std, dx)
-        dx = dx.reshape(batch_size, self.input_channels, input_h, input_w).transpose(0, 3, 1, 2)
+        dx = dx.reshape(batch_size, input_h, input_w, self.input_channels).transpose(0, 3, 1, 2)
+
         return dx
 
     def update_weights(self, lr):
         self.gamma_gradients = self.gamma - lr * self.gamma_gradients
-        self.gamma_gradients = self.bias - lr * self.beta_gradients
+        self.gamma_gradients = self.beta - lr * self.beta_gradients
 
 
 def _compiled_forward(layer_input, gamma, beta, running_mean, running_var, is_train):

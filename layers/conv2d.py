@@ -37,7 +37,7 @@ class Conv2DLayer:
         self.weights = self.weights - lr * self.weights_gradients
         self.bias = self.bias - lr * self.bias_gradients
 
-
+@njit()
 def _compiled_forward(layer_input, weights, bias):
     batch_size, input_channels, image_h, image_w = layer_input.shape
     output_channels = weights.shape[0]
@@ -59,14 +59,13 @@ def _compiled_forward(layer_input, weights, bias):
                 flatten = x_pad[index, :, i:i + kernel_size, j:j + kernel_size].copy().reshape(-1)
                 x_col[:, neuron] = flatten
                 neuron += 1
-        output_image[index] = (w_row.dot(x_col) + bias.copy().reshape(output_channels, 1)).reshape(output_channels,
+        output_image[index] = (w_row.dot(x_col) + bias.reshape(output_channels, 1)).reshape(output_channels,
                                                                                                    image_h, image_w)
     cache = x_pad
     return cache, output_image.reshape(batch_size, output_channels, image_h, image_w)
 
-
 def _compiled_derive(cache, weights, dx):
-    x_pad = cache.copy()
+    x_pad = cache
     image_h_pad = x_pad.shape[2]
     image_w_pad = x_pad.shape[3]
 
@@ -104,20 +103,22 @@ if __name__ == '__main__':
     np.random.seed(69)
     desc = {"type": "conv2d",
             "kernel_size": 3,
-            "input_channels": 3,
+            "input_channels": 128,
             "output_channels": 256}
     l = Conv2DLayer(desc)
-    inp = np.random.randn(1, 3, 16, 16)
+    inp = np.random.randn(32, 128, 32, 32)
     import time
 
+    out = l.forward(inp,is_train=False)
+
     s_t = time.time()
-    out = l.forward(inp)
+    _ = l.derive(out)
     e_t = time.time()
     print(e_t - s_t)
+    s_t = time.time()
     _ = l.derive(out)
     e_t = time.time()
     print(e_t - s_t)
     _ = l.derive(out)
     e_t = time.time()
     print(e_t - s_t)
-    # out = l.derive(out)

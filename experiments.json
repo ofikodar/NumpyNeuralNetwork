@@ -6,33 +6,28 @@
         "type": "conv2d",
         "kernel_size": 3,
         "input_channels": 3,
-        "output_channels": 32
-      },
-      {
-        "type": "leakyRelu"
-      },
-      {
-        "type": "maxPooling",
-        "pool_size": 2
-      },
-            {
-        "type": "conv2d",
-        "kernel_size": 3,
-        "input_channels": 32,
         "output_channels": 64
       },
       {
+        "type": "bn",
+        "input_channels": 64
+      },
+      {
         "type": "leakyRelu"
       },
       {
         "type": "maxPooling",
         "pool_size": 2
       },
-                 {
+      {
         "type": "conv2d",
         "kernel_size": 3,
         "input_channels": 64,
         "output_channels": 128
+      },
+      {
+        "type": "bn",
+        "input_channels": 128
       },
       {
         "type": "leakyRelu"
@@ -46,8 +41,24 @@
       },
       {
         "type": "fc",
+        "num_nodes": 4096,
+        "previous_nodes": 8192
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "fc",
+        "num_nodes": 4096,
+        "previous_nodes": 4096
+      },
+      {
+        "type": "leakyRelu"
+      },
+      {
+        "type": "fc",
         "num_nodes": "output",
-        "previous_nodes": 2048
+        "previous_nodes": 4096
       },
       {
         "type": "softmax"
