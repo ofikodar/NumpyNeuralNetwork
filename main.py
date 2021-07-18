@@ -42,6 +42,7 @@ def _extract_data(df, is_test=False):
     y_data = None
     if not is_test:
         y_data = df[0] - 1
+        y_data = y_data.values.astype(int)
     return images, y_data
 
 
