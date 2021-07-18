@@ -107,6 +107,7 @@ class Model:
             if es_patience_count == es_patience:
                 break
         self.layers = copy.deepcopy(self.best_model)
+        np.save("model",self.layers)
         print("Finished Training, Best Acc:", round(prev_acc, 4))
         self._export_history(history)
 

@@ -47,11 +47,7 @@ def _extract_data(df, is_test=False):
 
 
 def _predict_test(model, name):
-    predictions = []
-    for x in X_test:
-        p = model.predict(x).argmax()
-        predictions.append(p)
-
+    predictions = model.predict(X_test).argmax(axis=1)
     test_df[0] = predictions
     test_df[0] += 1
     experiment_test_path = test_data_file.replace('.csv', f'_{name}.csv')
