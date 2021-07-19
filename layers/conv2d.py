@@ -13,10 +13,15 @@ class Conv2DLayer:
         weights = np.random.randn(output_channels, input_channels, kernel_size, kernel_size) / np.sqrt(total_weights)
         bias = np.zeros(shape=[output_channels])
 
+        self.weights_v = np.zeros(weights.shape)
+        self.bias_v = np.zeros(bias.shape)
+
         self.output_channels = output_channels
         self.kernel_size = kernel_size
         self.weights = weights
         self.bias = bias
+        self.momentum = 0.8
+
         self.cache = None
         self.weights_gradients = []
         self.bias_gradients = []
@@ -34,8 +39,12 @@ class Conv2DLayer:
         return dx
 
     def update_weights(self, lr):
-        self.weights = self.weights - lr * self.weights_gradients
-        self.bias = self.bias - lr * self.bias_gradients
+        self.weights_v = self.momentum * self.weights_v + lr * self.weights_gradients
+        self.bias_v = self.momentum * self.bias_v + lr * self.bias_gradients
+
+        self.weights = self.weights - self.weights_v
+        self.bias = self.bias - self.bias_v
+
 
 def _compiled_forward(layer_input, weights, bias):
     batch_size, input_channels, image_h, image_w = layer_input.shape

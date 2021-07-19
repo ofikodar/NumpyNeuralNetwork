@@ -9,6 +9,9 @@ class BNLayer:
 
         self.gamma = np.random.randn(num_nodes) / np.sqrt(num_nodes)
         self.beta = np.random.randn(num_nodes) / np.sqrt(num_nodes)
+        self.gamma_v = np.zeros(num_nodes)
+        self.beta_v = np.zeros(num_nodes)
+        self.momentum = 0.8
         self.gamma_gradients = []
         self.beta_gradients = []
         self.cache = []
@@ -36,8 +39,11 @@ class BNLayer:
         return dx
 
     def update_weights(self, lr):
-        self.gamma_gradients = self.gamma - lr * self.gamma_gradients
-        self.gamma_gradients = self.beta - lr * self.beta_gradients
+        self.gamma_v = self.momentum * self.gamma_v + lr * self.gamma_gradients
+        self.beta_v = self.momentum * self.beta_v + lr * self.beta_gradients
+
+        self.gamma = self.gamma - self.gamma_v
+        self.beta = self.beta - self.beta_v
 
 
 def _compiled_forward(layer_input, gamma, beta, running_mean, running_var, is_train):

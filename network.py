@@ -82,7 +82,7 @@ class Model:
                 self.backprop(batch_y)
                 self.update_weights(lr)
 
-            train_acc, train_loss = self.report(X_test, y_test, name='Train')
+            train_acc, train_loss = self.report(X_train, y_train, name='Train')
             val_loss, val_acc = self.report(X_test, y_test, name='Val')
 
             history['train_acc'].append(train_acc)

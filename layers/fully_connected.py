@@ -14,6 +14,9 @@ class FCLayer:
         self.bias = bias
         self.weights_gradients = []
         self.bias_gradients = []
+        self.weights_v = np.zeros(weights.shape)
+        self.bias_v = np.zeros(bias.shape)
+        self.momentum = 0.8
 
     def forward(self, layer_input, is_train):
         self.cache = layer_input
@@ -28,8 +31,11 @@ class FCLayer:
         return dh_prev
 
     def update_weights(self, lr):
-        self.weights = self.weights - lr * self.weights_gradients
-        self.bias = self.bias - lr * self.bias_gradients
+        self.weights_v = self.momentum * self.weights_v + lr * self.weights_gradients
+        self.bias_v = self.momentum * self.bias_v + lr * self.bias_gradients
+
+        self.weights = self.weights - self.weights_v
+        self.bias = self.bias - self.bias_v
 
 
 def _compiled_forward(layer_input, weights, bias):
