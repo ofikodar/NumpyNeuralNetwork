@@ -1,5 +1,6 @@
 import copy
 import os
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,7 +53,7 @@ class Model:
 
         train_samples = X_train.shape[0]
         num_batches = train_samples // batch_size
-
+        num_batches +=1
         history = dict()
         history['train_acc'] = []
         history['train_loss'] = []
@@ -107,7 +108,10 @@ class Model:
             if es_patience_count == es_patience:
                 break
         self.layers = copy.deepcopy(self.best_model)
-        np.save("model",self.layers)
+
+        with open('model.pickle', 'wb') as f:
+            pickle.dump(self.layers, f)
+
         print("Finished Training, Best Acc:", round(prev_acc, 4))
         self._export_history(history)
 
@@ -131,7 +135,14 @@ class Model:
             plt.clf()
 
     def report(self, x_data, y_data, name):
-        pred = self.predict(x_data)
+        batch_size = 16
+        num_batch = (x_data.shape[0] // batch_size) + 1
+        pred = []
+        for batch_index in range(num_batch):
+            batch_slice = x_data[batch_index * batch_size: (batch_index + 1) * batch_size]
+            pred += self.predict(batch_slice).tolist()
+        pred = np.array(pred)
+
         loss = self.calc_loss(pred, y_data)
         acc = np.sum(pred.argmax(axis=1) == y_data)
         acc /= x_data.shape[0]
