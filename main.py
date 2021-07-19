@@ -15,9 +15,9 @@ NUM_CATEGORIES = 10
 
 
 def load_data():
-    train_df = pd.read_csv(train_data_file, header=None, nrows=100)
-    val_df = pd.read_csv(validation_data_file, header=None, nrows=100)
-    test_df = pd.read_csv(test_data_file, header=None, nrows=100)
+    train_df = pd.read_csv(train_data_file, header=None)
+    val_df = pd.read_csv(validation_data_file, header=None)
+    test_df = pd.read_csv(test_data_file, header=None)
 
     X_train, y_train = _extract_data(train_df)
     X_val, y_val = _extract_data(val_df)
@@ -48,7 +48,7 @@ def _extract_data(df, is_test=False):
 
 def _predict_test(model, name):
     batch_size = 16
-    num_batch = (X_test.shape[0] // batch_size) + 1
+    num_batch = np.ceil(X_test.shape[0] / batch_size).astype(int)
     predictions = []
     for batch_index in range(num_batch):
         batch_slice = X_test[batch_index * batch_size: (batch_index + 1) * batch_size]

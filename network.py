@@ -52,8 +52,7 @@ class Model:
             epochs=10):
 
         train_samples = X_train.shape[0]
-        num_batches = train_samples // batch_size
-        num_batches +=1
+        num_batches = np.ceil(train_samples / batch_size).astype(int)
         history = dict()
         history['train_acc'] = []
         history['train_loss'] = []
@@ -136,7 +135,8 @@ class Model:
 
     def report(self, x_data, y_data, name):
         batch_size = 16
-        num_batch = (x_data.shape[0] // batch_size) + 1
+        num_batch = np.ceil(x_data.shape[0] / batch_size).astype(int)
+
         pred = []
         for batch_index in range(num_batch):
             batch_slice = x_data[batch_index * batch_size: (batch_index + 1) * batch_size]
